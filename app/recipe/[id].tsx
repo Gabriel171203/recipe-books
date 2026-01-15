@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getThemeByCategory } from '../../services/theme';
 import AIChatModal from '../../components/AIChatModal';
+import * as Speech from 'expo-speech';
+import { addToShoppingList, markRecipeAsFinished, getFinishedRecipes } from '../../services/storage';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = height * 0.45;
@@ -22,6 +24,7 @@ export default function RecipeDetail() {
     const [timerActiveStep, setTimerActiveStep] = useState<number | null>(null);
     const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
     const [isAIChatVisible, setIsAIChatVisible] = useState(false);
+    const [speakingStep, setSpeakingStep] = useState<number | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -29,18 +32,28 @@ export default function RecipeDetail() {
                 setRecipe(data);
                 setLoading(false);
             });
+            // Check if already finished
+            getFinishedRecipes().then(finishedList => {
+                if (finishedList.find(r => r.idMeal === id)) {
+                    setIsFinished(true);
+                }
+            });
         }
     }, [id]);
 
     const theme = getThemeByCategory(recipe?.strCategory);
 
-    const handleFinish = () => {
-        setIsFinished(true);
-        Alert.alert(
-            "Masyarakat Kenyang! 🍽️",
-            `Selamat! Anda baru saja menyelesaikan resep ${recipe?.strMeal}. Jangan lupa cuci piring ya! 😉`,
-            [{ text: "Mantap!", style: "default" }]
-        );
+    const handleFinish = async () => {
+        if (!recipe) return;
+        const success = await markRecipeAsFinished(recipe);
+        if (success) {
+            setIsFinished(true);
+            Alert.alert(
+                "Masyarakat Kenyang! 🍽️",
+                `Selamat! Anda baru saja menyelesaikan resep ${recipe.strMeal}. Jangan lupa cuci piring ya! 😉`,
+                [{ text: "Mantap!", style: "default" }]
+            );
+        }
     };
 
     const extractMinutes = (text: string) => {
@@ -89,8 +102,64 @@ export default function RecipeDetail() {
     useEffect(() => {
         return () => {
             if (timerInterval) clearInterval(timerInterval);
+            Speech.stop();
         };
     }, [timerInterval]);
+
+    const handleSpeak = async (text: string, index: number) => {
+        const isCurrentlySpeaking = await Speech.isSpeakingAsync();
+
+        if (speakingStep === index && isCurrentlySpeaking) {
+            Speech.stop();
+            setSpeakingStep(null);
+            return;
+        }
+
+        setSpeakingStep(index);
+        Speech.speak(text, {
+            language: 'id-ID',
+            onDone: () => setSpeakingStep(null),
+            onStopped: () => setSpeakingStep(null),
+            onError: () => setSpeakingStep(null),
+            pitch: 1.1,
+            rate: 1.0,
+        });
+    };
+
+    const handleAddIngredient = async (name: string, measure: string) => {
+        if (!recipe) return;
+        const success = await addToShoppingList({
+            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+            name,
+            measure,
+            recipeId: recipe.idMeal,
+            recipeName: recipe.strMeal
+        });
+        if (success) {
+            Alert.alert('Sukses', `${name} ditambahkan ke daftar belanja! 🛒`);
+        }
+    };
+
+    const handleAddAllIngredients = async () => {
+        if (!recipe) return;
+        const ingredients = getIngredients();
+        let addedCount = 0;
+
+        for (const item of ingredients) {
+            const success = await addToShoppingList({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                name: item.name,
+                measure: item.measure,
+                recipeId: recipe.idMeal,
+                recipeName: recipe.strMeal
+            });
+            if (success) addedCount++;
+        }
+
+        if (addedCount > 0) {
+            Alert.alert('Sukses', `${addedCount} bahan ditambahkan ke daftar belanja! 🛒📦`);
+        }
+    };
 
     if (loading) {
         return (
@@ -198,13 +267,28 @@ export default function RecipeDetail() {
                         </View>
                     </View>
 
-                    <Text style={styles.sectionTitle}>Ingredients</Text>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Ingredients</Text>
+                        <TouchableOpacity
+                            style={[styles.addAllBtn, { backgroundColor: theme.secondary }]}
+                            onPress={handleAddAllIngredients}
+                        >
+                            <Ionicons name="cart-outline" size={16} color={theme.text} />
+                            <Text style={[styles.addAllText, { color: theme.text }]}>Add All</Text>
+                        </TouchableOpacity>
+                    </View>
                     <View style={styles.ingredientsList}>
                         {getIngredients().map((item, index) => (
                             <View key={index} style={styles.ingredientItem}>
                                 <View style={[styles.ingredientDot, { backgroundColor: theme.primary }]} />
                                 <Text style={styles.ingredientName}>{item.name}</Text>
                                 <Text style={styles.ingredientMeasure}>{item.measure}</Text>
+                                <TouchableOpacity
+                                    style={styles.addSingleBtn}
+                                    onPress={() => handleAddIngredient(item.name, item.measure)}
+                                >
+                                    <Ionicons name="add-circle-outline" size={22} color={theme.primary} />
+                                </TouchableOpacity>
                             </View>
                         ))}
                     </View>
@@ -238,35 +322,49 @@ export default function RecipeDetail() {
                                         styles.instructionText,
                                         activeStep === index && { fontWeight: 'bold', fontSize: 17, color: '#000' }
                                     ]}>{step}</Text>
-                                    {activeStep === index && step.toLowerCase().includes('min') && (
+
+                                    <View style={styles.stepActions}>
                                         <TouchableOpacity
-                                            style={[
-                                                styles.timerButton,
-                                                { borderColor: theme.primary },
-                                                timerActiveStep === index && { backgroundColor: theme.primary }
-                                            ]}
-                                            onPress={() => {
-                                                if (timerActiveStep === index) {
-                                                    stopTimer();
-                                                } else {
-                                                    const mins = extractMinutes(step);
-                                                    if (mins > 0) startTimer(index, mins);
-                                                }
-                                            }}
+                                            style={[styles.actionIcon, speakingStep === index && { backgroundColor: theme.primary }]}
+                                            onPress={() => handleSpeak(step, index)}
                                         >
                                             <Ionicons
-                                                name={timerActiveStep === index ? "stop-circle-outline" : "timer-outline"}
-                                                size={16}
-                                                color={timerActiveStep === index ? "#fff" : theme.primary}
+                                                name={speakingStep === index ? "stop-circle" : "volume-high-outline"}
+                                                size={18}
+                                                color={speakingStep === index ? "#fff" : theme.primary}
                                             />
-                                            <Text style={[
-                                                styles.timerButtonText,
-                                                { color: timerActiveStep === index ? "#fff" : theme.primary }
-                                            ]}>
-                                                {timerActiveStep === index ? `Stop (${formatTime(timerSeconds)})` : 'Start Timer'}
-                                            </Text>
                                         </TouchableOpacity>
-                                    )}
+
+                                        {activeStep === index && step.toLowerCase().includes('min') && (
+                                            <TouchableOpacity
+                                                style={[
+                                                    styles.timerButton,
+                                                    { borderColor: theme.primary, marginTop: 0 },
+                                                    timerActiveStep === index && { backgroundColor: theme.primary }
+                                                ]}
+                                                onPress={() => {
+                                                    if (timerActiveStep === index) {
+                                                        stopTimer();
+                                                    } else {
+                                                        const mins = extractMinutes(step);
+                                                        if (mins > 0) startTimer(index, mins);
+                                                    }
+                                                }}
+                                            >
+                                                <Ionicons
+                                                    name={timerActiveStep === index ? "stop-circle-outline" : "timer-outline"}
+                                                    size={16}
+                                                    color={timerActiveStep === index ? "#fff" : theme.primary}
+                                                />
+                                                <Text style={[
+                                                    styles.timerButtonText,
+                                                    { color: timerActiveStep === index ? "#fff" : theme.primary }
+                                                ]}>
+                                                    {timerActiveStep === index ? `Stop (${formatTime(timerSeconds)})` : 'Start Timer'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
                                 </View>
                             </TouchableOpacity>
                         ))}
@@ -446,11 +544,29 @@ const styles = StyleSheet.create({
         height: 35,
         backgroundColor: 'rgba(0,0,0,0.05)',
     },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 18,
+    },
     sectionTitle: {
         fontSize: 22,
         fontWeight: 'bold',
         color: '#333',
-        marginBottom: 18,
+        marginBottom: 0,
+    },
+    addAllBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+    },
+    addAllText: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginLeft: 4,
     },
     ingredientsList: {
         marginBottom: 15,
@@ -479,6 +595,10 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#888',
         fontWeight: '600',
+        marginRight: 10,
+    },
+    addSingleBtn: {
+        padding: 5,
     },
     timelineContainer: {
         marginTop: 10,
@@ -525,6 +645,23 @@ const styles = StyleSheet.create({
         color: '#555',
         lineHeight: 26,
         textAlign: 'justify',
+        marginBottom: 10,
+    },
+    stepActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 5,
+    },
+    actionIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+        backgroundColor: '#f8f9fa',
     },
     timerButton: {
         flexDirection: 'row',

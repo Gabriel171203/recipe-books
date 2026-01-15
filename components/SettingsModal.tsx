@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { saveUserGeminiKey, getUserGeminiKey, removeUserGeminiKey } from '../services/storage';
+import { saveUserGeminiKey, getUserGeminiKey, removeUserGeminiKey, saveUserPreferences, getUserPreferences } from '../services/storage';
 
 interface SettingsModalProps {
     isVisible: boolean;
@@ -22,6 +22,7 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isVisible, onClose }: SettingsModalProps) {
     const [apiKey, setApiKey] = useState('');
+    const [preferences, setPreferences] = useState('');
     const [hasStoredKey, setHasStoredKey] = useState(false);
 
     useEffect(() => {
@@ -31,24 +32,35 @@ export default function SettingsModal({ isVisible, onClose }: SettingsModalProps
     }, [isVisible]);
 
     const loadKey = async () => {
-        const storedKey = await getUserGeminiKey();
+        const [storedKey, storedPrefs] = await Promise.all([
+            getUserGeminiKey(),
+            getUserPreferences()
+        ]);
+
         if (storedKey) {
             setApiKey(storedKey);
             setHasStoredKey(true);
         }
+        if (storedPrefs) {
+            setPreferences(storedPrefs);
+        }
     };
 
     const handleSave = async () => {
-        if (!apiKey.trim()) {
-            Alert.alert('Error', 'API Key tidak boleh kosong!');
-            return;
-        }
+        const keyToSave = apiKey.trim();
+        const prefsToSave = preferences.trim();
 
-        const success = await saveUserGeminiKey(apiKey.trim());
-        if (success) {
-            Alert.alert('Sukses', 'API Key berhasil disimpan! 🔑');
-            setHasStoredKey(true);
+        const results = await Promise.all([
+            keyToSave ? saveUserGeminiKey(keyToSave) : Promise.resolve(true),
+            saveUserPreferences(prefsToSave)
+        ]);
+
+        if (results.every(r => r)) {
+            Alert.alert('Sukses', 'Pengaturan berhasil disimpan! ✨');
+            if (keyToSave) setHasStoredKey(true);
             onClose();
+        } else {
+            Alert.alert('Error', 'Gagal menyimpan beberapa pengaturan.');
         }
     };
 
@@ -86,6 +98,19 @@ export default function SettingsModal({ isVisible, onClose }: SettingsModalProps
                             <Text style={styles.infoText}>
                                 Gunakan API Key Anda sendiri agar fitur Chef AI Assistant bisa berjalan tanpa batas.
                             </Text>
+                        </View>
+
+                        <Text style={styles.label}>Preferensi Diet / Alergi</Text>
+                        <View style={[styles.inputWrapper, { height: 80, alignItems: 'flex-start', paddingVertical: 10 }]}>
+                            <Ionicons name="nutrition-outline" size={20} color="#999" style={[styles.inputIcon, { marginTop: 5 }]} />
+                            <TextInput
+                                style={[styles.input, { textAlignVertical: 'top' }]}
+                                placeholder="Contoh: Alergi kacang, Diet Keto, Vegetarian..."
+                                placeholderTextColor="#bbb"
+                                value={preferences}
+                                onChangeText={setPreferences}
+                                multiline
+                            />
                         </View>
 
                         <Text style={styles.label}>Gemini API Key</Text>

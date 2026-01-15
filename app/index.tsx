@@ -1,4 +1,5 @@
 import { View, FlatList, ActivityIndicator, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useEffect, useState, useCallback, memo } from 'react';
 import { getRecipes, searchRecipes, getRecipesByCategory } from '../services/api';
 import RecipeCard from '../components/RecipeCard';
@@ -16,7 +17,10 @@ const HomeHeader = memo(({
     triggerSearch,
     selectedCategory,
     handleCategoryPress,
-    onOpenSettings
+    onOpenSettings,
+    onOpenShopping,
+    onOpenMealPlan,
+    onOpenDiary
 }: any) => {
     return (
         <View style={styles.headerContainer}>
@@ -25,9 +29,20 @@ const HomeHeader = memo(({
                     <Text style={styles.welcomeText}>Hello, Chef! 👋</Text>
                     <Text style={styles.subtitleText}>What do you want to cook today?</Text>
                 </View>
-                <TouchableOpacity style={styles.profileButton} onPress={onOpenSettings}>
-                    <Ionicons name="person-circle-outline" size={40} color="#ff7a18" />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity style={styles.iconButton} onPress={onOpenDiary}>
+                        <Ionicons name="trophy-outline" size={26} color="#ff7a18" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconButton} onPress={onOpenMealPlan}>
+                        <Ionicons name="calendar-outline" size={28} color="#ff7a18" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconButton} onPress={onOpenShopping}>
+                        <Ionicons name="cart-outline" size={30} color="#ff7a18" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconButton} onPress={onOpenSettings}>
+                        <Ionicons name="person-circle-outline" size={32} color="#ff7a18" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.searchWrapper}>
@@ -92,6 +107,7 @@ export default function Home() {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+    const router = useRouter();
 
     const fetchRecipes = useCallback(async (category: string, query: string) => {
         setLoading(true);
@@ -174,10 +190,13 @@ export default function Home() {
                     <HomeHeader
                         searchQuery={searchQuery}
                         handleSearch={handleSearch}
-                        triggerSearch={triggerSearch}
+                        triggerSearch={() => fetchRecipes(selectedCategory, searchQuery)}
                         selectedCategory={selectedCategory}
-                        handleCategoryPress={handleCategoryPress}
+                        handleCategoryPress={setSelectedCategory}
                         onOpenSettings={() => setIsSettingsVisible(true)}
+                        onOpenShopping={() => router.push('/shopping-list')}
+                        onOpenMealPlan={() => router.push('/meal-planner')}
+                        onOpenDiary={() => router.push('/cooking-diary')}
                     />
                 }
                 ListEmptyComponent={!loading ? renderEmpty : null}
@@ -221,6 +240,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 20,
     },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconButton: {
+        marginLeft: 10,
+        padding: 5,
+    },
     welcomeText: {
         fontSize: 24,
         fontWeight: 'bold',
@@ -230,9 +257,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#888',
         marginTop: 2,
-    },
-    profileButton: {
-        padding: 4,
     },
     searchWrapper: {
         flexDirection: 'row',

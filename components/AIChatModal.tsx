@@ -17,6 +17,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Recipe } from '../types/recipe';
 import { askChefAI } from '../services/gemini';
 import { getThemeByCategory } from '../services/theme';
+import { getChatHistory, saveChatHistory } from '../services/storage';
+import * as Speech from 'expo-speech';
 
 interface Message {
     id: string;
@@ -42,8 +44,58 @@ export default function AIChatModal({ isVisible, onClose, recipe }: AIChatModalP
     ]);
     const [inputText, setInputText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isAutoSpeak, setIsAutoSpeak] = useState(false);
+    const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
     const scrollViewRef = useRef<ScrollView>(null);
     const theme = getThemeByCategory(recipe.strCategory);
+
+    useEffect(() => {
+        if (isVisible) {
+            loadHistory();
+        }
+    }, [isVisible, recipe.idMeal]);
+
+    const loadHistory = async () => {
+        const history = await getChatHistory(recipe.idMeal);
+        if (history && history.length > 0) {
+            setMessages(history);
+        } else {
+            // Reset to initial message if no history
+            setMessages([
+                {
+                    id: '1',
+                    text: `Halo! Saya Chef AI. Ada yang bisa saya bantu dengan resep ${recipe.strMeal} ini?`,
+                    sender: 'ai'
+                }
+            ]);
+        }
+    };
+
+    const handleClearChat = async () => {
+        const initialMessage: Message = {
+            id: '1',
+            text: `Halo! Saya Chef AI. Ada yang bisa saya bantu dengan resep ${recipe.strMeal} ini?`,
+            sender: 'ai'
+        };
+        setMessages([initialMessage]);
+        await saveChatHistory(recipe.idMeal, [initialMessage]);
+    };
+
+    const handleSpeak = (text: string, msgId: string) => {
+        if (speakingMsgId === msgId) {
+            Speech.stop();
+            setSpeakingMsgId(null);
+            return;
+        }
+
+        setSpeakingMsgId(msgId);
+        Speech.speak(text, {
+            language: 'id-ID',
+            onDone: () => setSpeakingMsgId(null),
+            onStopped: () => setSpeakingMsgId(null),
+            onError: () => setSpeakingMsgId(null),
+        });
+    };
 
     const handleSend = async () => {
         if (!inputText.trim() || isLoading) return;
@@ -66,9 +118,23 @@ export default function AIChatModal({ isVisible, onClose, recipe }: AIChatModalP
             sender: 'ai'
         };
 
-        setMessages(prev => [...prev, aiMessage]);
+        setMessages(prev => {
+            const updated = [...prev, aiMessage];
+            saveChatHistory(recipe.idMeal, updated);
+            return updated;
+        });
         setIsLoading(false);
+
+        if (isAutoSpeak) {
+            handleSpeak(aiMessage.text, aiMessage.id);
+        }
     };
+
+    useEffect(() => {
+        return () => {
+            Speech.stop();
+        };
+    }, []);
 
     useEffect(() => {
         if (scrollViewRef.current) {
@@ -108,6 +174,15 @@ export default function AIChatModal({ isVisible, onClose, recipe }: AIChatModalP
                                 <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                                     <Ionicons name="close" size={24} color="#fff" />
                                 </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => setIsAutoSpeak(!isAutoSpeak)}
+                                    style={[styles.headerIcon, isAutoSpeak && { backgroundColor: 'rgba(255,255,255,0.3)' }]}
+                                >
+                                    <Ionicons name={isAutoSpeak ? "volume-medium" : "volume-mute-outline"} size={20} color="#fff" />
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={handleClearChat} style={styles.clearButton}>
+                                    <Ionicons name="trash-outline" size={20} color="#fff" />
+                                </TouchableOpacity>
                             </View>
                         </LinearGradient>
                     </View>
@@ -119,19 +194,37 @@ export default function AIChatModal({ isVisible, onClose, recipe }: AIChatModalP
                         showsVerticalScrollIndicator={false}
                     >
                         {messages.map((message) => (
-                            <View
-                                key={message.id}
-                                style={[
-                                    styles.messageBubble,
-                                    message.sender === 'user' ? styles.userBubble : styles.aiBubble
-                                ]}
-                            >
-                                <Text style={[
-                                    styles.messageText,
-                                    message.sender === 'user' ? styles.userText : styles.aiText
-                                ]}>
-                                    {message.text}
-                                </Text>
+                            <View key={message.id} style={{ marginBottom: 15 }}>
+                                <View
+                                    style={[
+                                        styles.messageBubble,
+                                        message.sender === 'user'
+                                            ? [styles.userBubble, { backgroundColor: theme.primary }]
+                                            : styles.aiBubble
+                                    ]}
+                                >
+                                    <Text style={[
+                                        styles.messageText,
+                                        message.sender === 'user' ? styles.userText : styles.aiText
+                                    ]}>
+                                        {message.text}
+                                    </Text>
+                                </View>
+                                {message.sender === 'ai' && (
+                                    <TouchableOpacity
+                                        style={[styles.msgSpeakBtn, speakingMsgId === message.id && { backgroundColor: theme.primary }]}
+                                        onPress={() => handleSpeak(message.text, message.id)}
+                                    >
+                                        <Ionicons
+                                            name={speakingMsgId === message.id ? "stop-circle" : "volume-high-outline"}
+                                            size={14}
+                                            color={speakingMsgId === message.id ? "#fff" : "#999"}
+                                        />
+                                        <Text style={[styles.msgSpeakText, speakingMsgId === message.id && { color: '#fff' }]}>
+                                            {speakingMsgId === message.id ? 'Stop' : 'Dengarkan'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         ))}
                         {isLoading && (
@@ -216,6 +309,35 @@ const styles = StyleSheet.create({
         marginLeft: 'auto',
         padding: 5,
     },
+    headerIcon: {
+        padding: 8,
+        borderRadius: 12,
+        marginLeft: 5,
+    },
+    clearButton: {
+        padding: 5,
+        marginLeft: 5,
+    },
+    msgSpeakBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 12,
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#eee',
+        marginTop: -10,
+        marginLeft: 10,
+        zIndex: 1,
+    },
+    msgSpeakText: {
+        fontSize: 10,
+        color: '#999',
+        marginLeft: 4,
+        fontWeight: 'bold',
+    },
     chatArea: {
         flex: 1,
         backgroundColor: '#f8f9fa',
@@ -237,7 +359,6 @@ const styles = StyleSheet.create({
     },
     userBubble: {
         alignSelf: 'flex-end',
-        backgroundColor: '#fff',
         borderBottomRightRadius: 5,
     },
     aiBubble: {
@@ -252,10 +373,10 @@ const styles = StyleSheet.create({
         lineHeight: 22,
     },
     userText: {
-        color: '#333',
+        color: '#fff',
     },
     aiText: {
-        color: '#444',
+        color: '#333',
     },
     inputContainer: {
         padding: 20,

@@ -5,4 +5,5 @@ export interface Recipe {
     strInstructions?: string;
     strCategory?: string;
     strArea?: string;
+    [key: string]: any;
 }
