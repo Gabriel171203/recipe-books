@@ -5,6 +5,7 @@ import RecipeCard from '../components/RecipeCard';
 import { Recipe } from '../types/recipe';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import SettingsModal from '../components/SettingsModal';
 
 const CATEGORIES = ['All', 'Breakfast', 'Chicken', 'Dessert', 'Seafood', 'Vegetarian'];
 
@@ -14,7 +15,8 @@ const HomeHeader = memo(({
     handleSearch,
     triggerSearch,
     selectedCategory,
-    handleCategoryPress
+    handleCategoryPress,
+    onOpenSettings
 }: any) => {
     return (
         <View style={styles.headerContainer}>
@@ -23,7 +25,7 @@ const HomeHeader = memo(({
                     <Text style={styles.welcomeText}>Hello, Chef! 👋</Text>
                     <Text style={styles.subtitleText}>What do you want to cook today?</Text>
                 </View>
-                <TouchableOpacity style={styles.profileButton}>
+                <TouchableOpacity style={styles.profileButton} onPress={onOpenSettings}>
                     <Ionicons name="person-circle-outline" size={40} color="#ff7a18" />
                 </TouchableOpacity>
             </View>
@@ -89,6 +91,7 @@ export default function Home() {
     const [loading, setLoading] = useState<boolean>(true);
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSettingsVisible, setIsSettingsVisible] = useState(false);
 
     const fetchRecipes = useCallback(async (category: string, query: string) => {
         setLoading(true);
@@ -174,11 +177,16 @@ export default function Home() {
                         triggerSearch={triggerSearch}
                         selectedCategory={selectedCategory}
                         handleCategoryPress={handleCategoryPress}
+                        onOpenSettings={() => setIsSettingsVisible(true)}
                     />
                 }
                 ListEmptyComponent={!loading ? renderEmpty : null}
                 refreshing={loading}
                 onRefresh={() => fetchRecipes(selectedCategory, searchQuery)}
+            />
+            <SettingsModal
+                isVisible={isSettingsVisible}
+                onClose={() => setIsSettingsVisible(false)}
             />
         </View>
     );

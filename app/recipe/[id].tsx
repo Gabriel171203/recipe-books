@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, ActivityIndicator, TouchableOpacity, Dimensions, StatusBar, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, ActivityIndicator, TouchableOpacity, Dimensions, StatusBar, ScrollView, Alert } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useEffect, useState, useCallback } from 'react';
 import { getRecipeById } from '../../services/api';
@@ -6,6 +6,7 @@ import { Recipe } from '../../types/recipe';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getThemeByCategory } from '../../services/theme';
+import AIChatModal from '../../components/AIChatModal';
 
 const { width, height } = Dimensions.get('window');
 const HEADER_HEIGHT = height * 0.45;
@@ -16,6 +17,11 @@ export default function RecipeDetail() {
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
     const [activeStep, setActiveStep] = useState<number | null>(null);
+    const [isFinished, setIsFinished] = useState(false);
+    const [timerSeconds, setTimerSeconds] = useState<number>(0);
+    const [timerActiveStep, setTimerActiveStep] = useState<number | null>(null);
+    const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+    const [isAIChatVisible, setIsAIChatVisible] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -27,6 +33,64 @@ export default function RecipeDetail() {
     }, [id]);
 
     const theme = getThemeByCategory(recipe?.strCategory);
+
+    const handleFinish = () => {
+        setIsFinished(true);
+        Alert.alert(
+            "Masyarakat Kenyang! 🍽️",
+            `Selamat! Anda baru saja menyelesaikan resep ${recipe?.strMeal}. Jangan lupa cuci piring ya! 😉`,
+            [{ text: "Mantap!", style: "default" }]
+        );
+    };
+
+    const extractMinutes = (text: string) => {
+        const match = text.match(/(\d+)\s*(minute|min)/i);
+        return match ? parseInt(match[1]) : 0;
+    };
+
+    const startTimer = (stepIndex: number, minutes: number) => {
+        if (timerInterval) clearInterval(timerInterval);
+
+        const totalSeconds = minutes * 60;
+        setTimerSeconds(totalSeconds);
+        setTimerActiveStep(stepIndex);
+
+        const interval = setInterval(() => {
+            setTimerSeconds((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setTimerActiveStep(null);
+                    setTimerInterval(null);
+                    Alert.alert("Waktu Habis! ⏰", "Langkah memasak Anda sudah selesai waktunya.");
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        setTimerInterval(interval);
+    };
+
+    const stopTimer = () => {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            setTimerInterval(null);
+        }
+        setTimerActiveStep(null);
+        setTimerSeconds(0);
+    };
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    useEffect(() => {
+        return () => {
+            if (timerInterval) clearInterval(timerInterval);
+        };
+    }, [timerInterval]);
 
     if (loading) {
         return (
@@ -175,9 +239,32 @@ export default function RecipeDetail() {
                                         activeStep === index && { fontWeight: 'bold', fontSize: 17, color: '#000' }
                                     ]}>{step}</Text>
                                     {activeStep === index && step.toLowerCase().includes('min') && (
-                                        <TouchableOpacity style={[styles.timerButton, { borderColor: theme.primary }]}>
-                                            <Ionicons name="timer-outline" size={16} color={theme.primary} />
-                                            <Text style={[styles.timerButtonText, { color: theme.primary }]}>Start Timer</Text>
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.timerButton,
+                                                { borderColor: theme.primary },
+                                                timerActiveStep === index && { backgroundColor: theme.primary }
+                                            ]}
+                                            onPress={() => {
+                                                if (timerActiveStep === index) {
+                                                    stopTimer();
+                                                } else {
+                                                    const mins = extractMinutes(step);
+                                                    if (mins > 0) startTimer(index, mins);
+                                                }
+                                            }}
+                                        >
+                                            <Ionicons
+                                                name={timerActiveStep === index ? "stop-circle-outline" : "timer-outline"}
+                                                size={16}
+                                                color={timerActiveStep === index ? "#fff" : theme.primary}
+                                            />
+                                            <Text style={[
+                                                styles.timerButtonText,
+                                                { color: timerActiveStep === index ? "#fff" : theme.primary }
+                                            ]}>
+                                                {timerActiveStep === index ? `Stop (${formatTime(timerSeconds)})` : 'Start Timer'}
+                                            </Text>
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -189,16 +276,45 @@ export default function RecipeDetail() {
                 </View>
             </ScrollView>
 
-            <TouchableOpacity style={styles.cookButton}>
+            <TouchableOpacity
+                style={[styles.cookButton, isFinished && styles.cookButtonFinished]}
+                onPress={handleFinish}
+                disabled={isFinished}
+            >
                 <LinearGradient
-                    colors={theme.gradient as any}
+                    colors={isFinished ? ['#4CAF50', '#2E7D32'] : theme.gradient as any}
                     style={styles.cookButtonGradient}
                 >
-                    <Text style={styles.cookButtonText}>Mark as Finished</Text>
-                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+                    <Text style={styles.cookButtonText}>
+                        {isFinished ? 'Recipe Completed!' : 'Mark as Finished'}
+                    </Text>
+                    <Ionicons
+                        name={isFinished ? "checkmark-circle" : "checkmark-circle-outline"}
+                        size={20}
+                        color="#fff"
+                    />
                 </LinearGradient>
             </TouchableOpacity>
-        </View>
+
+            <TouchableOpacity
+                style={styles.aiFloatingButton}
+                onPress={() => setIsAIChatVisible(true)}
+            >
+                <LinearGradient
+                    colors={theme.gradient as any}
+                    style={styles.aiButtonGradient}
+                >
+                    <Ionicons name="chatbubbles" size={24} color="#fff" />
+                    <Text style={styles.aiButtonText}>Chat Chef</Text>
+                </LinearGradient>
+            </TouchableOpacity>
+
+            <AIChatModal
+                isVisible={isAIChatVisible}
+                onClose={() => setIsAIChatVisible(false)}
+                recipe={recipe}
+            />
+        </View >
     );
 }
 
@@ -438,6 +554,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 10,
     },
+    cookButtonFinished: {
+        shadowColor: '#4CAF50',
+    },
     cookButtonGradient: {
         width: '100%',
         height: '100%',
@@ -451,5 +570,30 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         marginRight: 10,
+    },
+    aiFloatingButton: {
+        position: 'absolute',
+        bottom: 110,
+        right: 20,
+        height: 50,
+        borderRadius: 25,
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        overflow: 'hidden',
+    },
+    aiButtonGradient: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        height: '100%',
+    },
+    aiButtonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        marginLeft: 8,
+        fontSize: 14,
     },
 });
