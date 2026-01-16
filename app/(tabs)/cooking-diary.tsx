@@ -12,6 +12,7 @@ import {
     ScrollView,
     Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,6 +28,7 @@ import { useFocusEffect } from 'expo-router';
 
 export default function CookingDiaryScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [history, setHistory] = useState<FinishedRecipe[]>([]);
     const [achievements, setAchievements] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -93,16 +95,9 @@ export default function CookingDiaryScreen() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-            <Stack.Screen
-                options={{
-                    headerShown: false,
-                }}
-            />
-
-            <View style={styles.headerSpacer} />
-
-            <View style={styles.mainHeader}>
+            <Stack.Screen options={{ headerShown: false }} />
+            <View style={{ height: insets.top, backgroundColor: '#fff' }} />
+            <View style={styles.header}>
                 <View>
                     <Text style={styles.headerTitle}>Cooking Diary 🏆</Text>
                     <Text style={styles.headerSubtitle}>Lacak perjalanan kulinermu</Text>
@@ -191,11 +186,7 @@ const styles = StyleSheet.create({
         padding: 15,
         paddingBottom: 100, // Account for floating tab bar
     },
-    headerSpacer: {
-        height: Platform.OS === 'ios' ? 60 : 50,
-        backgroundColor: '#fff',
-    },
-    mainHeader: {
+    header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',

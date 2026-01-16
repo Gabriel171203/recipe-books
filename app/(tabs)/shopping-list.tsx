@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
     Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,6 +29,7 @@ import { useFocusEffect } from 'expo-router';
 
 export default function ShoppingListScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [list, setList] = useState<ShoppingItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -111,10 +113,8 @@ export default function ShoppingListScreen() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
             <Stack.Screen options={{ headerShown: false }} />
-
-            <View style={styles.headerSpacer} />
+            <View style={{ height: insets.top, backgroundColor: '#fff' }} />
 
             <View style={styles.headerCard}>
                 <View style={styles.headerMain}>
@@ -187,9 +187,11 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fcfcfc',
     },
-    headerSpacer: {
-        height: Platform.OS === 'ios' ? 50 : 40,
-        backgroundColor: '#fff',
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingBottom: 100,
     },
     headerCard: {
         backgroundColor: '#fff',
@@ -329,11 +331,6 @@ const styles = StyleSheet.create({
     deleteButton: {
         padding: 8,
         marginLeft: 8,
-    },
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     emptyState: {
         flex: 1,

@@ -11,6 +11,7 @@ import {
     Alert,
     Platform
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +31,7 @@ import { useFocusEffect } from 'expo-router';
 
 export default function MealPlannerScreen() {
     const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [selectedDay, setSelectedDay] = useState('Senin');
     const [plans, setPlans] = useState<Record<string, MealItem[]>>({});
     const [loading, setLoading] = useState(true);
@@ -111,15 +113,8 @@ export default function MealPlannerScreen() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-            <Stack.Screen
-                options={{
-                    headerShown: false,
-                }}
-            />
-
-            <View style={styles.headerSpacer} />
-
+            <Stack.Screen options={{ headerShown: false }} />
+            <View style={{ height: insets.top, backgroundColor: '#fff' }} />
             <View style={styles.mainHeader}>
                 <View style={styles.headerTextGroup}>
                     <Text style={styles.headerTitle}>Meal Planner 🗓️</Text>
@@ -149,45 +144,27 @@ export default function MealPlannerScreen() {
             </View>
 
             <View style={styles.dayPickerContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayPickerScroll}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayPickerScroll} contentContainerStyle={styles.dayPickerList}>
                     {DAYS.map((day, index) => {
                         const isActive = selectedDay === day;
+                        const dateNum = index + 16;
                         return (
                             <TouchableOpacity
                                 key={day}
                                 onPress={() => setSelectedDay(day)}
-                                activeOpacity={0.7}
+                                activeOpacity={0.8}
                                 style={[
                                     styles.dayChip,
                                     isActive && styles.dayChipActive
                                 ]}
                             >
-                                <Text style={[styles.dayInitial, isActive && styles.textWhite]}>
-                                    {day.substring(0, 3)}
+                                <Text style={[styles.dayName, isActive && styles.dayNameActive]}>
+                                    {day.substring(0, 3).toUpperCase()}
                                 </Text>
-                                <View style={[styles.dayCircle, isActive && styles.dayCircleActive]}>
-                                    <Text style={[styles.dayDateText, isActive && styles.textWhite]}>
-                                        {index + 16}
-                                    </Text>
-                                </View>
-                                {isActive && (
-                                    <LinearGradient
-                                        colors={['#ff7a18', '#ff4d00']}
-                                        style={StyleSheet.absoluteFill}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 0, y: 1 }}
-                                        border-radius={25}
-                                    />
-                                )}
-                                {/* Re-render content over gradient if active */}
-                                {isActive && (
-                                    <View style={styles.chipContentOverlay}>
-                                        <Text style={styles.dayInitialActive}>{day.substring(0, 3)}</Text>
-                                        <View style={styles.dayCircleActiveOverlay}>
-                                            <Text style={styles.dayDateTextActive}>{index + 16}</Text>
-                                        </View>
-                                    </View>
-                                )}
+                                <Text style={[styles.dayDate, isActive && styles.dayDateActive]}>
+                                    {dateNum}
+                                </Text>
+                                {isActive && <View style={styles.activeDot} />}
                             </TouchableOpacity>
                         );
                     })}
@@ -240,10 +217,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingBottom: 100,
     },
-    headerSpacer: {
-        height: Platform.OS === 'ios' ? 50 : 40,
-        backgroundColor: '#fff',
-    },
     mainHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -294,76 +267,70 @@ const styles = StyleSheet.create({
     },
     dayPickerContainer: {
         backgroundColor: '#fff',
-        paddingBottom: 25,
+        paddingVertical: 15,
         borderBottomLeftRadius: 35,
         borderBottomRightRadius: 35,
-        elevation: 10,
+        elevation: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.08,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
         shadowRadius: 15,
-        zIndex: 10,
+        zIndex: 5,
     },
     dayPickerScroll: {
-        paddingHorizontal: 20,
+        marginLeft: -10,
+        marginRight: -10,
+    },
+    dayPickerList: {
+        paddingHorizontal: 25,
+        paddingBottom: 5,
     },
     dayChip: {
-        width: 65,
-        height: 95,
-        borderRadius: 25,
-        backgroundColor: '#fafafa',
-        marginHorizontal: 6,
-        justifyContent: 'center',
+        width: 60,
+        height: 85,
+        borderRadius: 22,
+        backgroundColor: '#f9f9f9',
+        marginRight: 12,
         alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#f0f0f0',
-        overflow: 'hidden',
     },
     dayChipActive: {
-        borderWidth: 0,
-        elevation: 8,
+        backgroundColor: '#ff7a18',
+        borderColor: '#ff7a18',
+        elevation: 10,
         shadowColor: '#ff7a18',
-        shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowRadius: 15,
+        transform: [{ scale: 1.05 }],
     },
-    chipContentOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 2,
-    },
-    dayInitial: {
-        fontSize: 12,
-        color: '#999',
+    dayName: {
+        fontSize: 11,
+        color: '#888',
         fontWeight: 'bold',
         marginBottom: 8,
-        textTransform: 'uppercase',
     },
-    dayInitialActive: {
-        fontSize: 12,
+    dayNameActive: {
+        color: 'rgba(255,255,255,0.8)',
+    },
+    dayDate: {
+        fontSize: 20,
+        color: '#333',
+        fontWeight: '900',
+    },
+    dayDateActive: {
         color: '#fff',
-        fontWeight: 'bold',
-        marginBottom: 8,
-        textTransform: 'uppercase',
-        opacity: 0.8,
     },
-    dayCircle: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+    activeDot: {
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
         backgroundColor: '#fff',
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
+        marginTop: 6,
+    },
+    textWhite: {
+        color: '#fff',
     },
     dayCircleActive: {
         backgroundColor: 'rgba(255,255,255,0.2)',
@@ -384,9 +351,6 @@ const styles = StyleSheet.create({
     dayDateTextActive: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#fff',
-    },
-    textWhite: {
         color: '#fff',
     },
     content: {

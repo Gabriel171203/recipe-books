@@ -1,4 +1,5 @@
-import { View, FlatList, ActivityIndicator, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { View, FlatList, ActivityIndicator, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, useCallback, memo } from 'react';
 import { getRecipes, searchRecipes, getRecipesByCategory } from '../../services/api';
@@ -9,6 +10,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import SettingsModal from '../../components/SettingsModal';
 
 const CATEGORIES = ['All', 'Breakfast', 'Chicken', 'Dessert', 'Seafood', 'Vegetarian'];
+const CATEGORY_ICONS: Record<string, any> = {
+    'All': 'apps-outline',
+    'Breakfast': 'cafe-outline',
+    'Chicken': 'restaurant-outline',
+    'Dessert': 'ice-cream-outline',
+    'Seafood': 'fish-outline',
+    'Vegetarian': 'leaf-outline'
+};
 
 // Separate Header component to prevent keyboard from closing on re-render
 const HomeHeader = memo(({
@@ -17,10 +26,11 @@ const HomeHeader = memo(({
     triggerSearch,
     selectedCategory,
     handleCategoryPress,
-    onOpenSettings
+    onOpenSettings,
+    topInset
 }: any) => {
     return (
-        <View style={styles.headerContainer}>
+        <View style={[styles.headerContainer, { paddingTop: Math.max(topInset, 15) }]}>
             <View style={styles.welcomeContainer}>
                 <View>
                     <Text style={styles.welcomeText}>Hello, Chef! 👋</Text>
@@ -62,22 +72,35 @@ const HomeHeader = memo(({
 
             <View style={styles.categorySection}>
                 <Text style={styles.sectionTitle}>Categories</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryList}>
-                    {CATEGORIES.map((cat) => (
-                        <TouchableOpacity
-                            key={cat}
-                            onPress={() => handleCategoryPress(cat)}
-                            style={[
-                                styles.categoryChip,
-                                selectedCategory === cat && !searchQuery && styles.categoryChipActive
-                            ]}
-                        >
-                            <Text style={[
-                                styles.categoryText,
-                                selectedCategory === cat && !searchQuery && styles.categoryTextActive
-                            ]}>{cat}</Text>
-                        </TouchableOpacity>
-                    ))}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryList} contentContainerStyle={styles.categoryListContent}>
+                    {CATEGORIES.map((cat) => {
+                        const isActive = selectedCategory === cat && !searchQuery;
+                        return (
+                            <TouchableOpacity
+                                key={cat}
+                                onPress={() => handleCategoryPress(cat)}
+                                style={[
+                                    styles.categoryChip,
+                                    isActive && styles.categoryChipActive
+                                ]}
+                            >
+                                <View style={[
+                                    styles.categoryIconContainer,
+                                    isActive && styles.categoryIconContainerActive
+                                ]}>
+                                    <Ionicons
+                                        name={CATEGORY_ICONS[cat] || 'restaurant-outline'}
+                                        size={22}
+                                        color={isActive ? '#fff' : '#ff7a18'}
+                                    />
+                                </View>
+                                <Text style={[
+                                    styles.categoryText,
+                                    isActive && styles.categoryTextActive
+                                ]}>{cat}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
                 </ScrollView>
             </View>
 
@@ -96,6 +119,7 @@ export default function Home() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isSettingsVisible, setIsSettingsVisible] = useState(false);
     const router = useRouter();
+    const insets = useSafeAreaInsets();
 
     const fetchRecipes = useCallback(async (category: string, query: string) => {
         setLoading(true);
@@ -135,6 +159,18 @@ export default function Home() {
         fetchRecipes(selectedCategory, searchQuery);
     }, [fetchRecipes, selectedCategory, searchQuery]);
 
+    const renderHeader = useCallback(() => (
+        <HomeHeader
+            searchQuery={searchQuery}
+            handleSearch={handleSearch}
+            triggerSearch={triggerSearch}
+            selectedCategory={selectedCategory}
+            handleCategoryPress={handleCategoryPress}
+            onOpenSettings={() => setIsSettingsVisible(true)}
+            topInset={insets.top}
+        />
+    ), [searchQuery, handleSearch, triggerSearch, selectedCategory, handleCategoryPress, insets.top]);
+
     const renderEmpty = () => (
         <View style={styles.emptyContainer}>
             <Ionicons name="restaurant-outline" size={80} color="#eee" />
@@ -167,23 +203,14 @@ export default function Home() {
             <FlatList
                 data={recipes}
                 keyExtractor={(item) => item.idMeal}
-                renderItem={({ item, index }) => (
-                    <View>
-                        <RecipeCard recipe={item} />
-                    </View>
+                renderItem={({ item }) => (
+                    <RecipeCard
+                        recipe={item}
+                    />
                 )}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.listContent}
-                ListHeaderComponent={
-                    <HomeHeader
-                        searchQuery={searchQuery}
-                        handleSearch={handleSearch}
-                        triggerSearch={() => fetchRecipes(selectedCategory, searchQuery)}
-                        selectedCategory={selectedCategory}
-                        handleCategoryPress={handleCategoryPress}
-                        onOpenSettings={() => setIsSettingsVisible(true)}
-                    />
-                }
+                ListHeaderComponent={renderHeader}
                 ListEmptyComponent={!loading ? renderEmpty : null}
                 refreshing={loading}
                 onRefresh={() => fetchRecipes(selectedCategory, searchQuery)}
@@ -309,33 +336,50 @@ const styles = StyleSheet.create({
         marginBottom: 18,
     },
     categoryList: {
-        marginLeft: -10,
+        marginLeft: -25,
+        marginRight: -25,
+    },
+    categoryListContent: {
+        paddingHorizontal: 25,
+        paddingBottom: 10,
     },
     categoryChip: {
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 35,
         backgroundColor: '#fff',
-        marginHorizontal: 8,
-        elevation: 4,
+        marginRight: 12,
+        elevation: 6,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
         borderWidth: 1,
-        borderColor: '#f5f5f5',
+        borderColor: 'rgba(0,0,0,0.03)',
     },
     categoryChipActive: {
         backgroundColor: '#ff7a18',
         borderColor: '#ff7a18',
-        elevation: 8,
-        shadowColor: '#ff7a18',
-        shadowOpacity: 0.2,
+        transform: [{ scale: 1.05 }],
+    },
+    categoryIconContainer: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: '#fff5ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 10,
+    },
+    categoryIconContainerActive: {
+        backgroundColor: 'rgba(255,255,255,0.25)',
     },
     categoryText: {
         fontSize: 15,
-        color: '#666',
-        fontWeight: '700',
+        color: '#444',
+        fontWeight: 'bold',
     },
     categoryTextActive: {
         color: '#fff',
