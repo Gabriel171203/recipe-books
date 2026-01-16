@@ -3,6 +3,7 @@ import { Recipe } from '../types/recipe';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { getThemeByCategory } from '../services/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -12,6 +13,7 @@ interface RecipeCardProps {
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
     const router = useRouter();
+    const theme = getThemeByCategory(recipe.strCategory);
 
     return (
         <TouchableOpacity
@@ -21,12 +23,12 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
         >
             <Image source={{ uri: recipe.strMealThumb }} style={styles.image} />
             <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.8)']}
+                colors={['transparent', 'rgba(0,0,0,0.85)']}
                 style={styles.gradient}
             />
 
             <View style={styles.content}>
-                <View style={styles.categoryBadge}>
+                <View style={[styles.categoryBadge, { backgroundColor: theme.primary }]}>
                     <Text style={styles.categoryText}>{recipe.strCategory || 'General'}</Text>
                 </View>
 
@@ -51,17 +53,19 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe }) => {
 
 const styles = StyleSheet.create({
     card: {
-        height: 220,
-        marginHorizontal: 20,
-        marginBottom: 20,
-        borderRadius: 25,
+        height: 240,
+        marginHorizontal: 25,
+        marginBottom: 25,
+        borderRadius: 28,
         backgroundColor: '#fff',
         overflow: 'hidden',
-        elevation: 5,
+        elevation: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
     },
     image: {
         width: '100%',
@@ -73,32 +77,33 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        height: '70%',
+        height: '75%',
     },
     content: {
         flex: 1,
         justifyContent: 'flex-end',
-        padding: 15,
+        padding: 20,
     },
     categoryBadge: {
-        backgroundColor: 'rgba(255, 122, 24, 0.9)',
         alignSelf: 'flex-start',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 10,
-        marginBottom: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 12,
+        marginBottom: 10,
     },
     categoryText: {
         color: '#fff',
         fontSize: 10,
         fontWeight: 'bold',
         textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     title: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: 8,
+        marginBottom: 10,
+        lineHeight: 26,
     },
     footer: {
         flexDirection: 'row',
@@ -107,13 +112,17 @@ const styles = StyleSheet.create({
     infoItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginRight: 15,
+        marginRight: 20,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 10,
     },
     infoText: {
         color: '#fff',
         fontSize: 12,
         marginLeft: 4,
-        fontWeight: '500',
+        fontWeight: '600',
     },
 });
 
