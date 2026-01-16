@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "buku-masakan",
-    "slug": "buku-masakan",
+    "name": "YouChef",
+    "slug": "you-chef",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "buku-masakan",
+    "scheme": "you-chef",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
