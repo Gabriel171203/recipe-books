@@ -28,6 +28,19 @@
 *   **Deep Shadow Architecture**: Cards and UI elements utilize premium depth and soft borders.
 *   **Adaptive Theme**: The entire app's color palette shifts to match the category of your current dish.
 
+## 📡 Connectivity & Offline Support
+
+**YouChef** balances cloud-powered intelligence with local reliability:
+
+- **🌐 Internet Required**:
+    - AI Chef Assistant (Gemini interactions).
+    - Searching and loading new recipes from TheMealDB.
+    - Voice Interaction (TTS) may require initial data.
+- **💾 Offline Ready**:
+    - **Shopping List**: View and manage ingredients anytime, anywhere.
+    - **Meal Planner**: Access your saved weekly schedule without signal.
+    - **Cooking Diary**: Your completed recipes and badges are stored locally.
+
 ## 🛠️ Tech Stack
 
 - **Framework**: React Native with Expo
