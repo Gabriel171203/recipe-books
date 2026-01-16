@@ -106,6 +106,16 @@ export default function RecipeDetail() {
         };
     }, [timerInterval]);
 
+    const detectLanguage = (text: string): string => {
+        const idKeywords = [
+            'saya', 'anda', 'bisa', 'apa', 'bagaimana', 'resep', 'bahan', 'langkah',
+            'masak', 'panaskan', 'tambahkan', 'siapkan', 'dan', 'yang', 'dengan'
+        ];
+        const lowerText = text.toLowerCase();
+        const isIndonesian = idKeywords.some(word => lowerText.includes(word));
+        return isIndonesian ? 'id-ID' : 'en-US';
+    };
+
     const handleSpeak = async (text: string, index: number) => {
         const isCurrentlySpeaking = await Speech.isSpeakingAsync();
 
@@ -116,13 +126,15 @@ export default function RecipeDetail() {
         }
 
         setSpeakingStep(index);
+        const lang = detectLanguage(text);
+
         Speech.speak(text, {
-            language: 'id-ID',
+            language: lang,
             onDone: () => setSpeakingStep(null),
             onStopped: () => setSpeakingStep(null),
             onError: () => setSpeakingStep(null),
-            pitch: 1.1,
-            rate: 1.0,
+            pitch: 0.9,
+            rate: 0.9,
         });
     };
 

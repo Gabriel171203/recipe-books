@@ -81,6 +81,17 @@ export default function AIChatModal({ isVisible, onClose, recipe }: AIChatModalP
         await saveChatHistory(recipe.idMeal, [initialMessage]);
     };
 
+    const detectLanguage = (text: string): string => {
+        // Simple heuristic: check for common Indonesian words
+        const idKeywords = [
+            'saya', 'anda', 'bisa', 'apa', 'bagaimana', 'resep', 'bahan', 'langkah',
+            'masak', 'panaskan', 'tambahkan', 'siapkan', 'dan', 'yang', 'dengan'
+        ];
+        const lowerText = text.toLowerCase();
+        const isIndonesian = idKeywords.some(word => lowerText.includes(word));
+        return isIndonesian ? 'id-ID' : 'en-US';
+    };
+
     const handleSpeak = (text: string, msgId: string) => {
         if (speakingMsgId === msgId) {
             Speech.stop();
@@ -89,8 +100,12 @@ export default function AIChatModal({ isVisible, onClose, recipe }: AIChatModalP
         }
 
         setSpeakingMsgId(msgId);
+        const lang = detectLanguage(text);
+
         Speech.speak(text, {
-            language: 'id-ID',
+            language: lang,
+            pitch: 0.9,
+            rate: 0.9,
             onDone: () => setSpeakingMsgId(null),
             onStopped: () => setSpeakingMsgId(null),
             onError: () => setSpeakingMsgId(null),
