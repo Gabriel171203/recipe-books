@@ -1,6 +1,6 @@
-# Buku Masakan 👨‍🍳✨
+# YouChef 👨‍🍳✨
 
-**Buku Masakan** is a premium, AI-powered culinary assistant designed for the home chef of 2026. Built with React Native and Expo, it combines professional utility with a stunning, high-fidelity user interface.
+**YouChef** is a premium, AI-powered culinary assistant designed for the home chef of 2026. Built with React Native and Expo, it combines professional utility with a stunning, high-fidelity user interface.
 
 ## 🚀 Key Features
 
