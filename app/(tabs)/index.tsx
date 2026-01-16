@@ -1,12 +1,12 @@
 import { View, FlatList, ActivityIndicator, StyleSheet, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, useCallback, memo } from 'react';
-import { getRecipes, searchRecipes, getRecipesByCategory } from '../services/api';
-import RecipeCard from '../components/RecipeCard';
-import { Recipe } from '../types/recipe';
+import { getRecipes, searchRecipes, getRecipesByCategory } from '../../services/api';
+import RecipeCard from '../../components/RecipeCard';
+import { Recipe } from '../../types/recipe';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import SettingsModal from '../components/SettingsModal';
+import SettingsModal from '../../components/SettingsModal';
 
 const CATEGORIES = ['All', 'Breakfast', 'Chicken', 'Dessert', 'Seafood', 'Vegetarian'];
 
@@ -17,10 +17,7 @@ const HomeHeader = memo(({
     triggerSearch,
     selectedCategory,
     handleCategoryPress,
-    onOpenSettings,
-    onOpenShopping,
-    onOpenMealPlan,
-    onOpenDiary
+    onOpenSettings
 }: any) => {
     return (
         <View style={styles.headerContainer}>
@@ -30,17 +27,8 @@ const HomeHeader = memo(({
                     <Text style={styles.subtitleText}>What do you want to cook today?</Text>
                 </View>
                 <View style={styles.headerActions}>
-                    <TouchableOpacity style={styles.iconButton} onPress={onOpenDiary}>
-                        <Ionicons name="trophy-outline" size={26} color="#ff7a18" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconButton} onPress={onOpenMealPlan}>
-                        <Ionicons name="calendar-outline" size={28} color="#ff7a18" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconButton} onPress={onOpenShopping}>
-                        <Ionicons name="cart-outline" size={30} color="#ff7a18" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.iconButton} onPress={onOpenSettings}>
-                        <Ionicons name="person-circle-outline" size={32} color="#ff7a18" />
+                    <TouchableOpacity style={styles.profileButton} onPress={onOpenSettings}>
+                        <Ionicons name="person-circle" size={40} color="#ff7a18" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -194,9 +182,6 @@ export default function Home() {
                         selectedCategory={selectedCategory}
                         handleCategoryPress={setSelectedCategory}
                         onOpenSettings={() => setIsSettingsVisible(true)}
-                        onOpenShopping={() => router.push('/shopping-list')}
-                        onOpenMealPlan={() => router.push('/meal-planner')}
-                        onOpenDiary={() => router.push('/cooking-diary')}
                     />
                 }
                 ListEmptyComponent={!loading ? renderEmpty : null}
@@ -244,9 +229,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    iconButton: {
-        marginLeft: 10,
-        padding: 5,
+    profileButton: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: '#fff5ed',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 2,
+        shadowColor: '#ff7a18',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     welcomeText: {
         fontSize: 24,

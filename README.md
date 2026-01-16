@@ -1,34 +1,46 @@
-# Buku Masakan 👨‍🍳
+# Buku Masakan 👨‍🍳✨
 
-A premium, modern culinary assistant built with React Native and Expo. Buku Masakan is designed not just to list recipes, but to accompany you throughout your cooking journey with an intuitive and adaptive interface.
+**Buku Masakan** is a premium, AI-powered culinary assistant designed for the home chef of 2026. Built with React Native and Expo, it combines professional utility with a stunning, high-fidelity user interface.
 
-## Key Features
+## 🚀 Key Features
 
-### 🎨 Adaptive Culinary Theming
-The application's interface is alive. The accent colors, gradients, and UI elements automatically adapt to the category of the recipe you're exploring—Fresh green for Vegetarian, deep teal for Seafood, and warm sunset tones for Meat dishes.
+### 🤖 Chef AI Assistant (Gemini 2.5)
+*   **Contextual Assistance**: Chat with "Chef AI" who knows exactly what recipe you're viewing.
+*   **Voice Control**: Integrated *Text-to-Speech* (TTS) narrates recipes while you cook.
+*   **Smart Substitutions**: Need a healthy alternative? Ask for substitutions based on your personal health profile.
 
-### 🔍 Smart Recipe Exploration
-Explore thousands of recipes from across the globe with real-time filtering and a powerful search engine powered by The Meal DB API.
+### 🗓️ AI Meal Planner
+*   **Weekly Scheduling**: Automatically generate or manually plan your meals for the week.
+*   **Personalized Diet**: AI plans menus that respect your dietary preferences and health goals.
+*   **Premium Calendar UI**: Navigate your week with a high-end horizontal calendar interface.
 
-### ⏲️ Interactive Cooking Assistant
-*   **Step Focus Mode**: Tap on a cooking instruction to highlight it, dimming out distractions so you can stay focused on the current task.
-*   **Auto-Timer Detection**: The app intelligently detects time mentions in instructions and provides a "Start Timer" shortcut on the spot.
+### 🛒 Smart Shopping List
+*   **Instant Recipe Sync**: Save ingredients from any recipe directly to your list in one tap.
+*   **Progress Tracking**: Real-time progress bar shows your shopping completion at a glance.
+*   **Unified Sync**: Seamless data consistency across all tabs using optimized focus effects.
 
-### ✨ Premium Visual Experience
-*   Modern and clean aesthetic following premium design principles.
-*   Parallax zoom headers for immersive recipe visualization.
-*   Smooth staggered entrance animations for a refined feel.
+### 🏆 Cooking Diary & Badges
+*   **Culinary Journey**: Keep a log of every dish you've mastered.
+*   **Gamification**: Earn unique badges like "Seafood Master" or "Vegetarian Warrior" to track your progress.
 
-## Tech Stack
+### 🎨 Visual Excellence (2026 Design)
+*   **Glassmorphism Navigation**: Floating blur-effect tab bar for a modern, airy feel.
+*   **Deep Shadow Architecture**: Cards and UI elements utilize premium depth and soft borders.
+*   **Adaptive Theme**: The entire app's color palette shifts to match the category of your current dish.
+
+## 🛠️ Tech Stack
 
 - **Framework**: React Native with Expo
-- **Navigation**: Expo Router (File-based routing)
-- **Styling**: Vanilla StyleSheet with Expo Linear Gradient
-- **UI Icons**: Ionicons (@expo/vector-icons)
-- **Animations**: React Native Reanimated (Stable 3.x)
-- **API**: The Meal DB API
+- **AI Engine**: Google Gemini 2.5 Flash
+- **Navigation**: Expo Router (File-based)
+- **State Management**: AsyncStorage for local persistence
+- **Animation**: React Native Reanimated 3.x
+- **UI Components**: 
+    - `expo-blur` for Glassmorphism
+    - `expo-linear-gradient` for premium depth
+    - `expo-speech` for TTS narrations
 
-## Getting Started
+## 🏗️ Getting Started
 
 1. **Clone the repository**
    ```bash
@@ -40,16 +52,15 @@ Explore thousands of recipes from across the globe with real-time filtering and 
    npm install
    ```
 
-3. **Start the development server**
+3. **API Configuration**
+   - Obtain a Gemini API Key from [Google AI Studio](https://aistudio.google.com/).
+   - Input your key in the **Settings** menu within the app to activate AI features.
+
+4. **Launch the application**
    ```bash
    npx expo start
    ```
 
-4. **Launch the application**
-   - Scan the QR code with physical device (Expo Go).
-   - Press `a` for Android Emulator.
-   - Press `i` for iOS Simulator.
-
 ---
 
-*Enjoy your cooking journey with Buku Masakan!*
+*Transform your kitchen experience with the power of AI. Happy Cooking!* 🥙🚀🥇
